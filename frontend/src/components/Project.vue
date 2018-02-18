@@ -66,26 +66,28 @@ export default {
   components: {draggable},
   methods: {
     removeProject(project) {
-      this.$store.dispatch('projects/deleteProject', {lane: this.lane, id: project.id})
+      this.$store.dispatch('projects/deleteProject', {
+        lane: this.lane,
+        id: project.id,
+        kind: 'projects'
+      })
     },
     addNewProject() {
       this.$store.dispatch('projects/addNewProject', {lane: this.lane})
     },
     addChildTaskComp(task) {
-      this.$store.dispatch('projects/addChildTask', {lane: this.lane, id: task.id})
+      this.$store.dispatch('projects/addChildTask', {lane: this.lane, parent: task.id})
     },
     editProjectTitle(project) {
       this.$store.dispatch('projects/editProjectTitle', project)
-    },
-    openTask() {
-      console.log("open task");
     },
     selectProject(isOpen, task) {
       console.log("select project", isOpen, task)
       this.$store.dispatch('projects/selectProject', {
         isOpen: isOpen,
         task: task,
-        lane: this.lane
+        lane: this.lane,
+        kind: 'projects'
       })
     },
     ...mapActions([

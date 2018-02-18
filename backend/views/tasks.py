@@ -10,6 +10,7 @@ project_fields = {
     'title': fields.String,
     'color': fields.String,
     'deadline': fields.String,
+    'parent': fields.String,
     'labelValues': fields.List(fields.String),
     'description': fields.String
 }
@@ -55,28 +56,37 @@ class CombinedView(Resource):
 
 class ProjectsList(Resource):
     @marshal_with(project_fields)
-    def post(self):
+    def post(self, kind):
+        assert kind in ('projects', 'tasks')
         data = request.get_json(force=True)
-        print("data", data)
         lane = 'backlog'
         if 'lane' in data:
             lane = data['lane']
         obj = {"lane": lane, "title": 'Untitled'}
-        oid = mongo.db.projects.insert(obj)
+        if 'parent' in data:
+            obj['parent'] = data['parent']
+        oid = mongo.db[kind].insert(obj)
         print("rval", {"id": oid, "lane": obj["lane"]})
         return {"_id": oid, "title": obj["title"]}
 
 
 class ProjectView(Resource):
     @marshal_with(project_fields)
-    def put(self, id):
-        data = request.get_json(force=True)
-        updated_object = dict()
-        for prop in ('title', 'lane', 'color', 'labelValues', 'deadline', 'description'):
-            if prop in data:
-                updated_object[prop] =  data[prop]
+    def put(self, kind, id):
+        assert kind in ('projects', 'tasks')
 
-        return mongo.db.projects.find_one_and_update(
+        data = request.get_json(force=True)
+        print("aaa", data)
+        updated_object = {}
+        for prop in ('title', 'color', 'labelValues', 'deadline', 'description'):
+            if prop in data['item']:
+                print("update prop", prop, data['item'])
+                updated_object[prop] =  data['item'][prop]
+        if 'lane' in data:
+            print("setting lane", data['lane'])
+            updated_object['lane'] = data['lane']
+
+        return mongo.db[kind].find_one_and_update(
             {'_id': ObjectId(id)},
             {
                 '$set': updated_object,
@@ -86,24 +96,10 @@ class ProjectView(Resource):
             },
             return_document=ReturnDocument.AFTER)
 
-    def delete(self, id):
-        mongo.db.projects.remove({'_id': ObjectId(id)})
+    def delete(self, kind, id):
+        assert kind in ('projects', 'tasks')
 
-class TaskView(Resource):
-    @marshal_with(project_fields)
-    def put(self, id):
-        data = request.get_json(force=True)
-        return mongo.db.tasks.find_one_and_update(
-            {'_id': ObjectId(id)},
-            {
-                '$set': {
-                    'title': data['title'],
-                    'lane': data['lane']
-                }
-            },
-            return_document=ReturnDocument.AFTER)
-
-
+        mongo.db[kind].remove({'_id': ObjectId(id)})
 
 tasks = Blueprint('tasks', __name__)
 

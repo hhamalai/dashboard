@@ -18,7 +18,7 @@ const state = {
   loading: true,
   detailsDialogOpen: false,
   selectedItem: {
-    type: 0,
+    type: 'project',
     item: {
       title: ''
     }
@@ -26,15 +26,22 @@ const state = {
 }
 const setters = {
   updateTask: (task, lane) => {
-    Vue.http.put('http://localhost:5000/api/v1/tasks/' + task['id'], {
-      title: task['title'],
+    console.log("Task aa", task)
+    Vue.http.put('http://localhost:5000/api/v1/todo/tasks/' + task['id'], {
+      item: {
+        title: task['title']
+      },
       lane: lane
     }).then(
-        function(response) {})
+        function(response) {
+    })
   },
   moveProject: (project, lane) => {
-    Vue.http.put('http://localhost:5000/api/v1/projects/' + project['id'], {
-        title: project['title'],
+    console.log("Project aa", project)
+    Vue.http.put('http://localhost:5000/api/v1/todo/projects/' + project['id'], {
+        item: {
+          title: project['title']
+        },
         lane: lane
     }).then(
       function(response) {})
@@ -72,7 +79,7 @@ const actions = {
   },
   addNewProject({commit}, lane) {
     console.log("new project on lane=", lane)
-    Vue.http.post('http://localhost:5000/api/v1/projects', lane
+    Vue.http.post('http://localhost:5000/api/v1/todo/projects', lane
     ).then(function (response) {
       commit(types.NEW_PROJECT, { lane: lane.lane, project: response.data })
     }, function (error) {
@@ -88,6 +95,7 @@ const actions = {
       value: project.value,
       from: project.lane,
     })
+    console.log("Move project projects", project)
     if (project.value.length) setters.moveProject(project.value[project.value.length-1], project.lane)
   },
   moveTask({ commit }, task) {
@@ -95,24 +103,32 @@ const actions = {
       value: task.value,
       from: task.lane,
     })
-    if (task.value.length) setters.updateTask(task.value[project.value.length-1], task.lane)
+    console.log("Move task projects", task)
+    if (task.value.length) setters.updateTask(task.value[task.value.length-1], task.lane)
   },
   addChildTask({ commit }, task) {
-    commit(types.ADD_TASK, {
+    Vue.http.post('http://localhost:5000/api/v1/todo/tasks', {
       lane: task.lane,
-      title: 'untitled',
-      parent: task.id
+      parent: task.parent
+    }).then(function(response) {
+      commit(types.ADD_TASK, {
+        lane: task.lane,
+        title: 'untitled',
+        id: response.data.id,
+        parent: task.parent
+      })
     })
   },
   selectProject({ commit }, conf) {
-    console.log("action, select project", conf.isOpen, conf.task)
+    console.log("action, select project", conf.isOpen, conf.task, conf)
     commit(types.OPEN_DETAILS_DIALOG, {
       isOpen: conf.isOpen,
-      id: conf.task.id,
+      id: conf,
+      type: conf.kind,
       selectedItem: {
         item: conf.task,
         lane: conf.lane,
-        type: 0
+        type: conf.kind
       }
     })
   },
@@ -122,15 +138,18 @@ const actions = {
   },
   storeSelectedItem({commit}, project) {
     console.log("action", project)
-    Vue.http.put('http://localhost:5000/api/v1/projects/' + project['id'], project).then(
+    Vue.http.put(`http://localhost:5000/api/v1/todo/${project.type}/${project.item['id']}`, {
+      item: project.item,
+      lane: project.lane
+    }).then(
       function(response) {
         commit(types.STORE_SELECTED_ITEM)
       }
     )
   },
   detailsDialogOpen({ commit }, isOpen) {
-    commit(types.OPEN_DETAILS_DIALOG, {
-      isOpen: isOpen
+    commit(types.SET_DETAILS_DIALOG_OPEN_STATUS, {
+      isOpen: isOpen,
     })
   },
   closeDetailsDialog({ commit }) {
@@ -140,13 +159,19 @@ const actions = {
   deleteProject({ commit }, project) {
     console.log("Mutation, delete project", project)
     Vue.http({
-      url: 'http://localhost:5000/api/v1/projects/' + project.id,
+      url: `http://localhost:5000/api/v1/todo/${project.kind}/${project.id}`,
       method: 'DELETE'
     }).then(function (response) {
-      commit(types.DELETE_PROJECT, {
-        id: project.id,
-        lane: project.lane
-      })
+      if (project.kind == 'projects')
+        commit(types.DELETE_PROJECT, {
+          id: project.id,
+          lane: project.lane
+        })
+      else
+        commit(types.DELETE_TASK, {
+          id: project.id,
+          lane: project.lane
+        })
     }, function (error) {
       console.log('error while deleting projects', error)
     })
@@ -209,16 +234,27 @@ const mutations = {
   [types.DELETE_PROJECT] (state, obj) {
     state.projects[obj.lane] = state.projects[obj.lane].filter(p => p.id != obj.id)
   },
+
+  [types.SET_DETAILS_DIALOG_OPEN_STATUS] (state, obj) {
+      state.detailsDialogOpen = obj.isOpen
+  },
+
   [types.OPEN_DETAILS_DIALOG] (state, obj) {
-    console.log("mutate details dialog open", obj)
+    console.log("mutate details dialog open", state, obj)
     state.detailsDialogOpen = obj.isOpen
-    if (obj.selectedItem) {
-      state.selectedItem.item = JSON.parse(JSON.stringify(obj.selectedItem.item));
-      state.selectedItem.lane = obj.selectedItem.lane
-    }
+    console.log("selected item is", state[obj.selectedItem.type][obj.selectedItem.lane].filter(function(x)
+        { return x.id == obj.selectedItem.item }))
+    var si = state[obj.selectedItem.type][obj.selectedItem.lane].filter(function(x) { 
+        return x.id == obj.selectedItem.item.id 
+    })[0]
+    console.log("si", si)
+    state.selectedItem.item = si;
+    state.selectedItem.lane = obj.selectedItem.lane
+    state.selectedItem.type = obj.selectedItem.type
   },
   [types.UPDATE_SELECTED_ITEM] (state, obj) {
-    state.selectedItem.item = Object.assign(state.selectedItem.item, obj)
+    console.log("UPSELITEM", state, obj)
+    state.selectedItem.item = Object.assign(state.selectedItem.item, obj.item)
   },
   [types.STORE_SELECTED_ITEM] (state) {
     for (var i=0; i < state.projects[state.selectedItem.lane].length; i++) {

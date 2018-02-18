@@ -9,16 +9,16 @@
     </div>
     <div class="row">
       <div class="col-md-3 drag">
-				<project class="dragArea" :options="{group:'projects'}" lane="backlog"> </project>
+				<project class="dragArea2" :options="{group:'projects'}" lane="backlog"> </project>
       </div>
       <div class="col-md-3 drag">
-				<project class="dragArea" :options="{group:'projects'}" lane="inProgress"> </project>
+				<project class="dragArea2" :options="{group:'projects'}" lane="inProgress"> </project>
       </div>
       <div class="col-md-3 drag">
-				<project class="dragArea" :options="{group:'projects'}" lane="done"> </project>
+				<project class="dragArea2" :options="{group:'projects'}" lane="done"> </project>
       </div>
       <div class="col-md-3 drag">
-				<project class="dragArea" :options="{group:'projects'}" lane="archieved"> </project>
+				<project class="dragArea2" :options="{group:'projects'}" lane="archieved"> </project>
       </div>
     </div>
 
@@ -31,19 +31,18 @@
     </div>
 		<div class="row">
       <div class="col-md-3 drag">
-				<task class="dragArea" :options="{group:'tasks'}" lane="backlog"> </task>
+				<task class="dragArea2" :options="{group:'tasks'}" lane="backlog"> </task>
       </div>
       <div class="col-md-3 drag">
-				<task class="dragArea" :options="{group:'tasks'}" lane="inProgress"> </task>
+				<task class="dragArea2" :options="{group:'tasks'}" lane="inProgress"> </task>
       </div>
       <div class="col-md-3 drag">
-				<task class="dragArea" :options="{group:'tasks'}" lane="done"> </task>
+				<task class="dragArea2" :options="{group:'tasks'}" lane="done"> </task>
       </div>
       <div class="col-md-3 drag">
-				<task class="dragArea" :options="{group:'tasks'}" lane="archieved"> </task>
+				<task class="dragArea2" :options="{group:'tasks'}" lane="archieved"> </task>
       </div>
 		</div>
-    value dv: {{ dialogVisible }}
     <el-dialog
         title="Details"
         :visible.sync="dialogVisible"
@@ -129,8 +128,8 @@ export default {
         else return ""
       },
       set: function(nVal) {
-        console.log("set val", nVal)
-        this.$store.dispatch('projects/updateSelectedItem', { title: nVal });
+        console.log("set val", nVal, { item: {title: nVal }})
+        this.$store.dispatch('projects/updateSelectedItem', { item: {title: nVal }});
       }
     },
     description: {
@@ -142,7 +141,7 @@ export default {
       },
       set: function(nVal) {
         console.log("set val", nVal)
-        this.$store.dispatch('projects/updateSelectedItem', { description: nVal });
+        this.$store.dispatch('projects/updateSelectedItem', { item: {description: nVal }});
       }
     },
     deadline: {
@@ -156,7 +155,7 @@ export default {
       },
       set: function(nVal) {
         console.log("set val", nVal)
-        this.$store.dispatch('projects/updateSelectedItem', { deadline: nVal });
+        this.$store.dispatch('projects/updateSelectedItem', { item: { deadline: nVal }});
       }
     },
     color: {
@@ -166,7 +165,7 @@ export default {
         } else return ""
       },
       set: function(nVal) {
-        this.$store.dispatch('projects/updateSelectedItem', { color: nVal });
+        this.$store.dispatch('projects/updateSelectedItem', { item: { color: nVal }});
       }
     },
     labelValues: {
@@ -178,7 +177,7 @@ export default {
       },
       set: function(nVal) {
         console.log("set val", nVal)
-        this.$store.dispatch('projects/updateSelectedItem', { labels: nVal });
+        this.$store.dispatch('projects/updateSelectedItem', { item: { labels: nVal }});
       }
     },
     ...mapGetters({
@@ -195,7 +194,7 @@ export default {
     save() {
       console.log("save");
       console.log(this.$store.state.projects.selectedItem)
-      this.$store.dispatch('projects/storeSelectedItem', this.$store.state.projects.selectedItem.item)
+      this.$store.dispatch('projects/storeSelectedItem', this.$store.state.projects.selectedItem)
       this.dialogVisible = false
     }
   }

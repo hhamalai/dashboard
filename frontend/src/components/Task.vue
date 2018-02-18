@@ -1,15 +1,15 @@
 <template>
 	<draggable class="dragArea"  v-model="tasks" :options="{group:'tasks'}" @start="drag=true" @end="drag=false">
-    <div class="dragItem" v-for="task in tasks" :key="task.id">
+    <div v-bind:style="{ background: task.color }" class="dragItem" v-for="task in tasks" :key="task.id">
       <div>
         <el-button-group class="pull-right">
           <el-button icon="plus" v-on:click="addChildTaskComp(task)" size="mini"></el-button>
-          <el-button icon="search" @click="selectProject(task)" size="mini"></el-button>
+          <el-button icon="search" @click="selectProject(true, {id: task.parent}, 'projects')" size="mini"></el-button>
           <el-button icon="delete" @click="removeTask(task)" size="mini"></el-button>
         </el-button-group>
       </div>
 
-      <h2 v-on:click="rename(task)">{{task.title}}</h2>
+      <h2 vv-if="!project.editMode" @click="selectProject(true, task, 'tasks')">{{task.title}}</h2>
     </div>
 	</draggable>
 </template>
@@ -45,9 +45,6 @@ export default {
       console.log("selectedProject", this.$store.state.projects.getters)
       return this.$store.state.projects.selectedProject
     },
-    removeTask() {
-
-    },
 		tasksByLane() {
       console.log("TasksByLane", this.$store.state)
 		  var tasks = this.$store.state.projects.tasks[this.lane]
@@ -62,7 +59,28 @@ export default {
     rename(task) {
       console.log("rename", task)
       this.$store.dispatch('projects/renameTask', task, "renamed")
-    }
+    },
+    removeTask(task) {
+      this.$store.dispatch('projects/deleteProject', {
+        lane: this.lane,
+        id: task.id,
+        kind: 'tasks'
+      })
+    },
+    selectProject(isOpen, task, kind) {
+      console.log("select project", isOpen, task, kind)
+      this.$store.dispatch('projects/selectProject', {
+        isOpen: isOpen,
+        task: task,
+        lane: this.lane,
+        kind: kind
+      })
+    },
+    ...mapActions([
+      'projects/moveTask',
+      'projects/addChildTask',
+      'projects/selectProject'
+    ])
   }
 }
 </script>
